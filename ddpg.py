@@ -29,7 +29,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
     LRC = 0.001     #Lerning rate for Critic
 
     action_dim = 1  #Steering/Acceleration/Brake
-    state_dim = 1  #of sensors input
+    state_dim = 2  #of sensors input
 
     #np.random.seed(1337)
 
@@ -57,7 +57,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
 
     # Generate a Torcs environment
     #env = TorcsEnv(vision=vision, throttle=True,gear_change=False)
-    env = LTI(0)
+    env = LTI(np.zeros(state_dim))
 
     #Now load the weight
     print("Now we load the weight")
@@ -79,7 +79,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
 #            ob = env.reset(relaunch=True)   #relaunch TORCS every 3 episode because of the memory leak error
 #        else:
         ob = env.reset()
-        s_t = np.asarray([ob]) #TODO increase for more states
+        s_t = np.asarray(ob)[:, None].T #TODO increase for more states
 
 #        s_t = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY,  ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
 
@@ -109,12 +109,16 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
 
             ob, r_t, done, info = env.step(a_t[0])
-            s_t1 = np.asarray([ob]) #TODO increase for more states
+            s_t1 = np.asarray(ob)[:, None].T #TODO increase for more states
             #r_t = np.asarray([r_t])
             buff.add(s_t, a_t[0], r_t, s_t1, done)      #Add replay buffer
 
             #Do the batch update
             batch = buff.getBatch(BATCH_SIZE)
+            print "Batch:: "
+            for e in batch:
+                for i in range(5):
+                    print e[i]
             states = np.asarray([e[0] for e in batch])
             actions = np.asarray([e[1] for e in batch])
             rewards = np.asarray([e[2] for e in batch])
@@ -122,7 +126,13 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             dones = np.asarray([e[4] for e in batch])
             y_t = np.asarray([e[1] for e in batch])
 
+            if j == 0:
+                states = np.asarray([e[0] for e in batch])[0]
+                new_states = np.asarray([e[3] for e in batch])[0]                
+
             target_q_values = critic.target_model.predict([new_states, actor.target_model.predict(new_states)])
+            print "Predict: ",  [new_states, actor.target_model.predict(new_states)]
+            print "Target:", target_q_values
 
             for k in range(len(batch)):
                 if dones[k]:
