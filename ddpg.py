@@ -20,12 +20,12 @@ import matplotlib.pyplot as plt
 
 OU = OU()       #Ornstein-Uhlenbeck Process
 
-def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
-    BUFFER_SIZE = 100000
+def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
+    BUFFER_SIZE = 1000000
     BATCH_SIZE = 32
     GAMMA = 0.99
     TAU = 0.002     #Target Network HyperParameters
-    LRA = 0.00025    #Learning rate for Actor
+    LRA = 0.0002    #Learning rate for Actor
     LRC = 0.001     #Lerning rate for Critic
 
     action_dim = 1  #Steering/Acceleration/Brake
@@ -37,8 +37,8 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
 
     EXPLORE = 100000.
     episode_count = 4000
-    max_steps = 200
-    reward = -1000
+    max_steps = 10000
+    reward = 0
     done = False
     step = 0
     epsilon = 1
@@ -94,7 +94,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
             #s_t2 =np.expand_dims(s_t,axis = 1)
             a_t_original = actor.model.predict(s_t)
 
-            noise_t = train_indicator * max(epsilon, 0) * OU.function(a_t_original, 0 , 0.0, 5)
+            noise_t = train_indicator * max(epsilon, 0) * (OU.function(a_t_original, 0 , 0.0,7 ) + 0.1*env.disturbance(env.time))
             #noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.5 , 1.00, 0.10)
             #noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], -0.1 , 1.00, 0.05)
 
@@ -104,6 +104,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
             #    noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2],  0.2 , 1.00, 0.10)
 
             a_t = a_t_original + noise_t
+            a_t = a_t/a_t
             #a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
             #a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
 
@@ -145,12 +146,13 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
             step += 1
             if done:
                 break
-        plt.close()
-        plt.plot(env.hist)
-        plt.plot(env.mag*np.sin(env.freq*np.linspace(0,env.time,max_steps))+env.bias, 'r')
-        #plt.ylim([-1, 2])
-        plt.show(block=False)
-        #plt.draw()
+        if np.mod(i, 10) == 0:
+            plt.close()
+            plt.plot(env.hist)
+            plt.plot(env.ref_hist, 'r')
+            #plt.ylim([-1, 2])
+            plt.show(block=False)
+            #plt.draw()
         if np.mod(i, 3) == 0:
 
             if (train_indicator):
