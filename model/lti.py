@@ -47,10 +47,10 @@ class LTI:
         return self.x_dot
 
     def reward(self,e,u):
-        if e < 1.2*np.exp(-0.2*self.time)+0.1:
-            return 1
-        return 0
-        #return -0*(e)**2 - 0*u**2 + 0.1
+        #if e < 1.2*np.exp(-0.2*self.time)+0.1:
+        #    return 1
+        #return 0
+        return -20*(e)**2 - 0.1*u**2
 
     def update(self, u):
         #saturate u
@@ -67,6 +67,6 @@ class LTI:
         error = self.state[0] - self.ref
         reward = self.reward(error, action)
         self.ref_hist.append(np.array(self.ref))
-        if abs(error**2) > 2*np.exp(-0.08*self.time)+0.3 or abs(self.x_dot[1])>50:
+        if abs(error**2) > 3 or abs(self.x_dot[1])>50:
             done = True
         return error, reward, done, {}

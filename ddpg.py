@@ -37,8 +37,8 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
 
     EXPLORE = 100000.
     episode_count = 4000
-    max_steps = 10000
-    reward = 0
+    max_steps = 1000
+    reward =-10000
     done = False
     step = 0
     epsilon = 1
@@ -94,7 +94,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #s_t2 =np.expand_dims(s_t,axis = 1)
             a_t_original = actor.model.predict(s_t)
 
-            noise_t = train_indicator * max(epsilon, 0) * (OU.function(a_t_original, 0 , 0.0,7 ) + 0.1*env.disturbance(env.time))
+            noise_t = train_indicator * max(epsilon, 0) * (OU.function(a_t_original, 0 , 0.0,7 ) )
             #noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.5 , 1.00, 0.10)
             #noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], -0.1 , 1.00, 0.05)
 
@@ -104,7 +104,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #    noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2],  0.2 , 1.00, 0.10)
 
             a_t = a_t_original + noise_t
-            a_t = a_t/a_t
+            #a_t = a_t/a_t
             #a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
             #a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
 
@@ -146,7 +146,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             step += 1
             if done:
                 break
-        if np.mod(i, 10) == 0:
+        if np.mod(i, 3) == 0:
             plt.close()
             plt.plot(env.hist)
             plt.plot(env.ref_hist, 'r')
