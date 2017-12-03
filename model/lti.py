@@ -50,7 +50,7 @@ class LTI:
         #if e < 1.2*np.exp(-0.2*self.time)+0.1:
         #    return 1
         #return 0
-        return -20*(e)**2 - 0.1*u**2
+        return -20*(np.linalg.norm(e))**2 - 0.1*u**2
 
     def update(self, u):
         #saturate u

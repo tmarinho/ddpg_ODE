@@ -1,4 +1,5 @@
 from model.lti import LTI
+from MarkoC import StochSwitch
 import numpy as np
 import random
 import argparse
@@ -58,7 +59,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
     # Generate a Torcs environment
     #env = TorcsEnv(vision=vision, throttle=True,gear_change=False)
     env = LTI(0)
-
+    CTMC = StochSwitch()
     #Now load the weight
     print("Now we load the weight")
     try:
@@ -82,7 +83,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
         s_t = np.asarray([ob]) #TODO increase for more states
 
 #        s_t = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY,  ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
-
+        #CTMC.reset()
         total_reward = 0.
         for j in range(max_steps):
             loss = 0
@@ -102,9 +103,14 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #if random.random() <= 0.1:
             #    print("********Now we apply the brake***********")
             #    noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2],  0.2 , 1.00, 0.10)
+            if np.mod(j, 50) == 0:
+                CTMC.update_trans(env.time)
+                CTMC.sample()
+                if CTMC.x == 0:
+                    a_t = a_t_original/a_t_original + noise
+                else:
+                    a_t = a_t_original + noise_t
 
-            a_t = a_t_original + noise_t
-            #a_t = a_t/a_t
             #a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
             #a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
 
