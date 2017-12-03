@@ -37,8 +37,8 @@ class Quadcopter:
         self.Q      = np.zeros((13,13))
         self.Q[0,0] = 1
         self.Q[1,1] = 1
-        self.Q[3,3] = 5
-        self.Ru      = np.eye(4)
+        self.Q[2,2] = 5
+        self.Ru      = np.eye(3)
         self.Ru[0,0] = 0
         #SetupSim
         control_frequency = 250 # Hz for attitude control loop
@@ -49,9 +49,9 @@ class Quadcopter:
         roll, pitch, yaw = 0.0,0.0,0.0
         rot    = RPYToRot(roll, pitch, yaw)
         quat   = RotToQuat(rot)
-        self.state[0] = 10*np.random.randn()
-        self.state[1] = 10*np.random.randn()
-        self.state[2] = -np.random.rand()
+        self.state[0] = 0
+        self.state[1] = 0
+        self.state[2] = 0
         self.state[6] = quat[0]
         self.state[7] = quat[1]
         self.state[8] = quat[2]
@@ -144,14 +144,15 @@ class Quadcopter:
     def step(self, action):
         F = action[0];
         M = np.array([[action[1],action[2],action[3]]]).T
+        #M = np.array([[action[1],action[2],0.0]]).T
         done = False
         self.ref[2] = 10
         self.update(F,M)
         error = self.state - self.ref
         reward = self.reward(error, action)
         phi, theta, psi = self.attitude()
-        if abs(phi)> 1.2 or abs(theta) >1.2:
-            done = True
-        if abs(np.linalg.norm(error[0:2])) > 100:
+        #if abs(phi)> 1.5 or abs(theta) >1.5:
+        #    done = True
+        if abs(np.linalg.norm(error[2])) > 30:
             done = True
         return error, reward, done, {}

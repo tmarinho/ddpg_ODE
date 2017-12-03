@@ -31,14 +31,14 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
     LRA = 0.0002   #Learning rate for Actor
     LRC = 0.0015     #Lerning rate for Critic
 
-    action_dim = 4  #Steering/Acceleration/Brake
+    action_dim = 3  #Steering/Acceleration/Brake
     state_dim = 13  #of sensors input
 
     #np.random.seed(1337)
 
     vision = False
 
-    EXPLORE = 100000.
+    EXPLORE = 10000.
     episode_count = 4000
     max_steps = 10000
     reward =-100
@@ -99,10 +99,10 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #s_t2 =np.expand_dims(s_t,axis = 1)
             a_t_original = actor.model.predict(s_t)
             #print a_t_original[0], s_t
-            noise_t[0][0] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0], 0 , 0.0,10000 )
-            noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.2, 1.00, 500)
-            noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], 0 , 1.00, 500)
-            noise_t[0][3] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][3], 0, 1.00, 500)
+            noise_t[0][0] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0], 0 , 0.0,10 )
+            noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.2, 1.00, 0.1)
+            noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], 0 , 1.00, 0.1)
+            #noise_t[0][3] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][3], 0, 1.00, 500)
 
             #The following code do the stochastic brake
             #if random.random() <= 0.1:
@@ -114,10 +114,10 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #     if CTMC.x == 0:
             #         a_t = a_t_original/a_t_original + noise
             #     else:
-            a_t[0][0] = np.clip(a_t_original[0][0] + noise_t[0][0],-params.g,1000)
+            a_t[0][0] = np.clip(a_t_original[0][0] + noise_t[0][0],0,1000)
             a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
             a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
-            a_t[0][3] = a_t_original[0][1] + noise_t[0][3]
+            #a_t[0][3] = a_t_original[0][1] + noise_t[0][3]
 
             ob, r_t, done, info = env.step(a_t[0])
             s_t1 = np.asarray(ob)[:, None].T #TODO increase for more states
