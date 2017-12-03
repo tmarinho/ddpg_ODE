@@ -1,4 +1,4 @@
-from model.lti import LTI
+from model.quadcopter import Quadcopter
 from MarkoC import StochSwitch
 import numpy as np
 import random
@@ -30,8 +30,8 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
     LRA = 0.0001    #Learning rate for Actor
     LRC = 0.001     #Lerning rate for Critic
 
-    action_dim = 2  #Steering/Acceleration/Brake
-    state_dim = 2  #of sensors input
+    action_dim = 4  #Steering/Acceleration/Brake
+    state_dim = 13  #of sensors input
 
     #np.random.seed(1337)
 
@@ -39,7 +39,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
 
     EXPLORE = 100000.
     episode_count = 4000
-    max_steps = 5000
+    max_steps = 10000
     reward =-100
     done = False
     step = 0
@@ -59,7 +59,8 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
 
     # Generate a Torcs environment
     #env = TorcsEnv(vision=vision, throttle=True,gear_change=False)
-    env = LTI(np.zeros(state_dim))
+    #env = LTI(np.zeros(state_dim))
+    env =  Quadcopter()
 
     #Now load the weight
     print("Now we load the weight")
@@ -96,9 +97,10 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #s_t2 =np.expand_dims(s_t,axis = 1)
             a_t_original = actor.model.predict(s_t)
 
-            noise_t[0][0] = train_indicator * max(epsilon, 0) * (OU.function(a_t_original[0][0], 0 , 0.0,10 ) )
-            noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.2, 1.00, 3)
-            #noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], -0.1 , 1.00, 0.05)
+            noise_t[0][0] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0], 0 , 0.0,10 )
+            noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.2, 1.00, 10)
+            noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], 0 , 1.00, 10)
+            noise_t[0][3] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][3], 0, 1.00, 10)
 
             #The following code do the stochastic brake
             #if random.random() <= 0.1:
@@ -111,10 +113,9 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #         a_t = a_t_original/a_t_original + noise
             #     else:
             a_t[0][0] = a_t_original[0][0] + noise_t[0][0]
-
             a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
-            #a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
-
+            a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
+            a_t[0][3] = a_t_original[0][1] + noise_t[0][3]
             ob, r_t, done, info = env.step(a_t[0])
             s_t1 = np.asarray(ob)[:, None].T #TODO increase for more states
             #r_t = np.asarray([r_t])
@@ -156,10 +157,12 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
         if np.mod(i, 1) == 0:
             plt.close()
             hist = np.asarray(env.hist)
-            rhist = np.asarray(env.ref_hist)
+            #rhist = np.asarray(env.ref_hist)
             plt.plot(hist[:,0],'b')
+            plt.plot(hist[:,1],'r')
+            plt.plot(hist[:,2],'g')
             #plt.plot(hist[:,1],'r')
-            plt.plot(rhist[:,0], 'b-.')
+            #plt.plot(rhist[:,0], 'b-.')
             #plt.plot(rhist[:,1], 'r-.')
             #plt.ylim([-1, 2])
             plt.show(block=False)
