@@ -8,8 +8,8 @@ from keras.optimizers import Adam
 import keras.backend as K
 import tensorflow as tf
 
-HIDDEN1_UNITS = 128
-HIDDEN2_UNITS = 256
+HIDDEN1_UNITS = 16
+HIDDEN2_UNITS = 32
 
 class CriticNetwork(object):
     def __init__(self, sess, state_size, action_size, BATCH_SIZE, TAU, LEARNING_RATE):

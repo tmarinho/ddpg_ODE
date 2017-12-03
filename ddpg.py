@@ -11,6 +11,7 @@ import tensorflow as tf
 from time import sleep
 #from keras.engine.training import collect_trainable_weights
 import json
+import model.params as params
 
 from ReplayBuffer import ReplayBuffer
 from ActorNetwork import ActorNetwork
@@ -27,8 +28,8 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
     BATCH_SIZE = 32
     GAMMA = 0.99
     TAU = 0.001     #Target Network HyperParameters
-    LRA = 0.0001    #Learning rate for Actor
-    LRC = 0.001     #Lerning rate for Critic
+    LRA = 0.0002   #Learning rate for Actor
+    LRC = 0.0015     #Lerning rate for Critic
 
     action_dim = 4  #Steering/Acceleration/Brake
     state_dim = 13  #of sensors input
@@ -83,7 +84,8 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
 #        else:
         ob = env.reset()
         s_t = np.asarray(ob)[:, None].T #TODO increase for more states
-
+        #print s_t
+        #print  actor.model.predict(s_t)
 #        s_t = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY,  ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
         #CTMC.reset()
         total_reward = 0.
@@ -96,11 +98,11 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #a_t_original = actor.model.predict(s_t.reshape(1, s_t.shape[0]))
             #s_t2 =np.expand_dims(s_t,axis = 1)
             a_t_original = actor.model.predict(s_t)
-
-            noise_t[0][0] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0], 0 , 0.0,10 )
-            noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.2, 1.00, 10)
-            noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], 0 , 1.00, 10)
-            noise_t[0][3] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][3], 0, 1.00, 10)
+            #print a_t_original[0], s_t
+            noise_t[0][0] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0], 0 , 0.0,10000 )
+            noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.2, 1.00, 500)
+            noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], 0 , 1.00, 500)
+            noise_t[0][3] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][3], 0, 1.00, 500)
 
             #The following code do the stochastic brake
             #if random.random() <= 0.1:
@@ -112,10 +114,11 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #     if CTMC.x == 0:
             #         a_t = a_t_original/a_t_original + noise
             #     else:
-            a_t[0][0] = a_t_original[0][0] + noise_t[0][0]
+            a_t[0][0] = np.clip(a_t_original[0][0] + noise_t[0][0],-params.g,1000)
             a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
             a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
             a_t[0][3] = a_t_original[0][1] + noise_t[0][3]
+
             ob, r_t, done, info = env.step(a_t[0])
             s_t1 = np.asarray(ob)[:, None].T #TODO increase for more states
             #r_t = np.asarray([r_t])
@@ -157,10 +160,15 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
         if np.mod(i, 1) == 0:
             plt.close()
             hist = np.asarray(env.hist)
+            print(hist[0])
             #rhist = np.asarray(env.ref_hist)
-            plt.plot(hist[:,0],'b')
-            plt.plot(hist[:,1],'r')
-            plt.plot(hist[:,2],'g')
+            fig = plt.figure()
+            ax1 = fig.add_subplot(121)
+            ax1.plot(hist[:,0],'b')
+            ax1.plot(hist[:,1],'r')
+                        #plt.plot(hist[:,1],'r')
+            ax2 = fig.add_subplot(122)
+            ax2.plot(hist[:,2],'g')
             #plt.plot(hist[:,1],'r')
             #plt.plot(rhist[:,0], 'b-.')
             #plt.plot(rhist[:,1], 'r-.')
