@@ -3,35 +3,35 @@ import scipy.integrate as integrate
 from math import sin, cos
 class LTI:
     def __init__(self, state_0):
-        self.state = np.zeros(2)
-        self.state[0] = state_0
-        self.state[1] = 0
-        self.ref = 0.0
+        self.state = state_0
+        self.mag = np.ones(state_0.shape)
+        self.freq = np.zeros(state_0.shape)
+        self.bias = np.ones(state_0.shape)
+        self.time = 0.0
+        self.ref = self.mag*np.sin(self.freq*self.time) + self.bias
         self.x_dot = np.zeros(2)
         self.hist = []
         self.ref_hist = []
-        self.time = 0.0
+        self.reset()
         control_frequency = 100 # Hz for attitude control loop
         self.dt = 1.0 / control_frequency
-        self.mag = 0
-        self.freq = 1
-        self.bias = 0
         self.noise_rand = np.zeros(5)
         self.a1 = 1
         self.a2 = 1
 
     def reset(self):
-        self.state[0] = np.random.rand()*0
-        self.state[1] = np.random.randn()*0
+        self.state = np.random.rand(*self.state.shape)*0
+        self.mag = np.random.randn(*self.state.shape)*0
+        self.freq = 3*np.random.randn(*self.state.shape)*0
+        self.bias = np.random.rand(*self.state.shape)*0 + 1
+        self.time = 0.0
+        self.ref = self.mag*np.sin(self.freq*self.time) + self.bias
         self.hist = []
         self.ref_hist = []
-        self.time = 0.0
-        self.mag = np.random.randn()*0 +1
-        self.freq = 3*np.random.randn()*0
-        self.bias = np.random.rand()*0+1
         self.noise_rand = np.random.rand(5)
 
-        return self.state[0] - self.ref
+        return self.state - self.ref
+
     def disturbance(self,time):
         w = self.noise_rand
         return 0.1**w[0]*sin(time*10*w[1]) + 0.3*w[2]*cos(time*w[3]*9) - 0.5*sin(w[4]*time*6 + 3)
@@ -58,15 +58,15 @@ class LTI:
         out = integrate.odeint(self.state_dot, self.state, [0,self.dt], args = (u,self.time))
         self.time += self.dt
         self.state = out[1]
-        self.hist.append(np.array(self.state[0]))
+        self.hist.append(np.array(self.state))
 
     def step(self, action):
         self.ref = self.mag*np.sin(self.freq*self.time) + self.bias
         done = False
         self.update(action)
-        error = self.state[0] - self.ref
+        error = self.state - self.ref
         reward = self.reward(error, action)
         self.ref_hist.append(np.array(self.ref))
-        if abs(error**2) > 3 or abs(self.x_dot[1])>50:
+        if abs(np.linalg.norm(error)**2) > 3 or abs(self.x_dot[1])>50:
             done = True
         return error, reward, done, {}

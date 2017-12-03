@@ -30,7 +30,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
     LRC = 0.001     #Lerning rate for Critic
 
     action_dim = 1  #Steering/Acceleration/Brake
-    state_dim = 1  #of sensors input
+    state_dim = 2  #of sensors input
 
     #np.random.seed(1337)
 
@@ -58,8 +58,8 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
 
     # Generate a Torcs environment
     #env = TorcsEnv(vision=vision, throttle=True,gear_change=False)
-    env = LTI(0)
-    CTMC = StochSwitch()
+    env = LTI(np.zeros(state_dim))
+
     #Now load the weight
     print("Now we load the weight")
     try:
@@ -80,7 +80,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
 #            ob = env.reset(relaunch=True)   #relaunch TORCS every 3 episode because of the memory leak error
 #        else:
         ob = env.reset()
-        s_t = np.asarray([ob]) #TODO increase for more states
+        s_t = np.asarray(ob)[:, None].T #TODO increase for more states
 
 #        s_t = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY,  ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
         #CTMC.reset()
@@ -103,28 +103,28 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #if random.random() <= 0.1:
             #    print("********Now we apply the brake***********")
             #    noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2],  0.2 , 1.00, 0.10)
-            if np.mod(j, 50) == 0:
-                CTMC.update_trans(env.time)
-                CTMC.sample()
-                if CTMC.x == 0:
-                    a_t = a_t_original/a_t_original + noise
-                else:
-                    a_t = a_t_original + noise_t
+            # if np.mod(j, 50) == 0:
+            #     CTMC.update_trans(env.time)
+            #     CTMC.sample()
+            #     if CTMC.x == 0:
+            #         a_t = a_t_original/a_t_original + noise
+            #     else:
+            a_t = a_t_original + noise_t
 
             #a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
             #a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
 
             ob, r_t, done, info = env.step(a_t[0])
-            s_t1 = np.asarray([ob]) #TODO increase for more states
+            s_t1 = np.asarray(ob)[:, None].T #TODO increase for more states
             #r_t = np.asarray([r_t])
             buff.add(s_t, a_t[0], r_t, s_t1, done)      #Add replay buffer
 
             #Do the batch update
             batch = buff.getBatch(BATCH_SIZE)
-            states = np.asarray([e[0] for e in batch])
+            states = np.asarray([e[0][0] for e in batch])
             actions = np.asarray([e[1] for e in batch])
             rewards = np.asarray([e[2] for e in batch])
-            new_states = np.asarray([e[3] for e in batch])
+            new_states = np.asarray([e[3][0] for e in batch])
             dones = np.asarray([e[4] for e in batch])
             y_t = np.asarray([e[1] for e in batch])
 
@@ -154,8 +154,12 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
                 break
         if np.mod(i, 3) == 0:
             plt.close()
-            plt.plot(env.hist)
-            plt.plot(env.ref_hist, 'r')
+            hist = np.asarray(env.hist)
+            rhist = np.asarray(env.ref_hist)
+            plt.plot(hist[:,0],'b')
+            plt.plot(hist[:,1],'b-.')
+            plt.plot(rhist[:,0], 'r')
+            plt.plot(rhist[:,1], 'r-.')
             #plt.ylim([-1, 2])
             plt.show(block=False)
             #plt.draw()
