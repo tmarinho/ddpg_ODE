@@ -8,6 +8,7 @@ from keras.models import Sequential
 from keras.layers.core import Dense, Dropout, Activation, Flatten
 from keras.optimizers import Adam
 import tensorflow as tf
+from time import sleep
 #from keras.engine.training import collect_trainable_weights
 import json
 
@@ -25,11 +26,11 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
     BUFFER_SIZE = 1000000
     BATCH_SIZE = 32
     GAMMA = 0.99
-    TAU = 0.002     #Target Network HyperParameters
-    LRA = 0.0002    #Learning rate for Actor
+    TAU = 0.001     #Target Network HyperParameters
+    LRA = 0.0001    #Learning rate for Actor
     LRC = 0.001     #Lerning rate for Critic
 
-    action_dim = 1  #Steering/Acceleration/Brake
+    action_dim = 2  #Steering/Acceleration/Brake
     state_dim = 2  #of sensors input
 
     #np.random.seed(1337)
@@ -38,8 +39,8 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
 
     EXPLORE = 100000.
     episode_count = 4000
-    max_steps = 1000
-    reward =-10000
+    max_steps = 10000
+    reward =-100
     done = False
     step = 0
     epsilon = 1
@@ -95,8 +96,8 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #s_t2 =np.expand_dims(s_t,axis = 1)
             a_t_original = actor.model.predict(s_t)
 
-            noise_t = train_indicator * max(epsilon, 0) * (OU.function(a_t_original, 0 , 0.0,7 ) )
-            #noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.5 , 1.00, 0.10)
+            noise_t[0][0] = train_indicator * max(epsilon, 0) * (OU.function(a_t_original[0][0], 0 , 0.0,3 ) )
+            noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.5 , 1.00, 0.10)
             #noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], -0.1 , 1.00, 0.05)
 
             #The following code do the stochastic brake
@@ -109,9 +110,9 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #     if CTMC.x == 0:
             #         a_t = a_t_original/a_t_original + noise
             #     else:
-            a_t = a_t_original + noise_t
+            a_t[0][0] = a_t_original[0][0] + noise_t[0][0]
 
-            #a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
+            a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
             #a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
 
             ob, r_t, done, info = env.step(a_t[0])
@@ -152,14 +153,14 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             step += 1
             if done:
                 break
-        if np.mod(i, 3) == 0:
+        if np.mod(i, 1) == 0:
             plt.close()
             hist = np.asarray(env.hist)
             rhist = np.asarray(env.ref_hist)
             plt.plot(hist[:,0],'b')
-            plt.plot(hist[:,1],'b-.')
-            plt.plot(rhist[:,0], 'r')
-            plt.plot(rhist[:,1], 'r-.')
+            #plt.plot(hist[:,1],'r')
+            plt.plot(rhist[:,0], 'b-.')
+            #plt.plot(rhist[:,1], 'r-.')
             #plt.ylim([-1, 2])
             plt.show(block=False)
             #plt.draw()

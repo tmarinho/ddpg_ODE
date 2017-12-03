@@ -8,8 +8,8 @@ from keras.optimizers import Adam
 import tensorflow as tf
 import keras.backend as K
 
-HIDDEN1_UNITS = 32
-HIDDEN2_UNITS = 64
+HIDDEN1_UNITS = 128
+HIDDEN2_UNITS = 256
 
 class ActorNetwork(object):
     def __init__(self, sess, state_size, action_size, BATCH_SIZE, TAU, LEARNING_RATE):
