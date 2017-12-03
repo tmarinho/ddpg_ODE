@@ -18,12 +18,12 @@ class LTI:
         self.noise_rand = np.zeros(5)
         self.a1 = 1
         self.a2 = 1
-        self.Q      = np.array([[10, 0],[0, 0.5]])
+        self.Q      = np.array([[10, 0],[0, 0]])
 
     def reset(self):
-        self.state = np.random.randn(*self.state.shape)*0.5
-        self.mag = np.random.randn(*self.state.shape)*4
-        self.freq = np.random.rand(*self.state.shape)*3 +0.5
+        self.state = np.random.rand(*self.state.shape)*0.2
+        self.mag = np.random.randn(*self.state.shape)*0.5
+        self.freq = np.random.rand(*self.state.shape)*1 +0.5
         self.bias = np.random.randn(*self.state.shape)
         self.time = 0.0
         self.ref = self.mag*np.sin(self.freq*self.time) + self.bias
@@ -41,8 +41,10 @@ class LTI:
     def state_dot(self, state, t, u, time):
         x1 = state[0]
         x2 = state[1]
-        x1_dot = x2 + u[0]
-        x2_dot = -self.a1*x1-self.a2*x2 + u[1]# + self.disturbance(time)
+        #x1_dot = x2 + u[0] + x2**2
+        #x2_dot = -self.a1*x1-self.a2*x2 + u[1]# + self.disturbance(time)
+        x1_dot =   +x2 + u[0]
+        x2_dot = -x1 -x2  +u[1]
 
         self.x_dot  = np.array([x1_dot, x2_dot])
 
@@ -52,7 +54,8 @@ class LTI:
         #if e < 1.2*np.exp(-0.2*self.time)+0.1:
         #    return 1
         #return 0
-        return -e.dot(self.Q.dot(e))- 0.1*np.linalg.norm(u)**2
+        return -e.dot(self.Q.dot(e))- 0.0001*np.linalg.norm(u)**2 +0.01
+        #return 1/(e.dot(self.Q.dot(e))+1)
 
     def update(self, u):
         #saturate u
@@ -65,11 +68,12 @@ class LTI:
     def step(self, action):
         self.ref = self.mag*np.sin(self.freq*self.time) + self.bias
         self.ref[1] = 0
+        #self.ref[0] = 0
         done = False
         self.update(action)
         error = self.state - self.ref
         reward = self.reward(error, action)
         self.ref_hist.append(np.array(self.ref))
-        if abs(np.linalg.norm(error[0])) > 100:
+        if abs(np.linalg.norm(error[0])) > 20:
             done = True
         return error, reward, done, {}

@@ -39,7 +39,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
 
     EXPLORE = 100000.
     episode_count = 4000
-    max_steps = 10000
+    max_steps = 5000
     reward =-100
     done = False
     step = 0
@@ -96,8 +96,8 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #s_t2 =np.expand_dims(s_t,axis = 1)
             a_t_original = actor.model.predict(s_t)
 
-            noise_t[0][0] = train_indicator * max(epsilon, 0) * (OU.function(a_t_original[0][0], 0 , 0.0,3 ) )
-            noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.5 , 1.00, 0.10)
+            noise_t[0][0] = train_indicator * max(epsilon, 0) * (OU.function(a_t_original[0][0], 0 , 0.0,10 ) )
+            noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.2, 1.00, 3)
             #noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], -0.1 , 1.00, 0.05)
 
             #The following code do the stochastic brake
