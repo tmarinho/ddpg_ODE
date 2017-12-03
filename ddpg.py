@@ -115,24 +115,14 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
 
             #Do the batch update
             batch = buff.getBatch(BATCH_SIZE)
-            print "Batch:: "
-            for e in batch:
-                for i in range(5):
-                    print e[i]
-            states = np.asarray([e[0] for e in batch])
+            states = np.asarray([e[0][0] for e in batch])
             actions = np.asarray([e[1] for e in batch])
             rewards = np.asarray([e[2] for e in batch])
-            new_states = np.asarray([e[3] for e in batch])
+            new_states = np.asarray([e[3][0] for e in batch])
             dones = np.asarray([e[4] for e in batch])
             y_t = np.asarray([e[1] for e in batch])
 
-            if j == 0:
-                states = np.asarray([e[0] for e in batch])[0]
-                new_states = np.asarray([e[3] for e in batch])[0]                
-
             target_q_values = critic.target_model.predict([new_states, actor.target_model.predict(new_states)])
-            print "Predict: ",  [new_states, actor.target_model.predict(new_states)]
-            print "Target:", target_q_values
 
             for k in range(len(batch)):
                 if dones[k]:
@@ -158,8 +148,12 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
                 break
         if np.mod(i, 3) == 0:
             plt.close()
-            plt.plot(env.hist)
-            plt.plot(env.ref_hist, 'r')
+            hist = np.asarray(env.hist)
+            rhist = np.asarray(env.ref_hist)
+            plt.plot(hist[:,0],'b')
+            plt.plot(hist[:,1],'b-.')
+            plt.plot(rhist[:,0], 'r')
+            plt.plot(rhist[:,1], 'r-.')
             #plt.ylim([-1, 2])
             plt.show(block=False)
             #plt.draw()

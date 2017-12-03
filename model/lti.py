@@ -4,28 +4,30 @@ from math import sin, cos
 class LTI:
     def __init__(self, state_0):
         self.state = state_0
-        self.ref = 0.0
+        self.mag = np.ones(state_0.shape)
+        self.freq = np.zeros(state_0.shape)
+        self.bias = np.ones(state_0.shape)
+        self.time = 0.0
+        self.ref = self.mag*np.sin(self.freq*self.time) + self.bias
         self.x_dot = np.zeros(2)
         self.hist = []
         self.ref_hist = []
-        self.time = 0.0
+        self.reset()
         control_frequency = 100 # Hz for attitude control loop
         self.dt = 1.0 / control_frequency
-        self.mag = 0
-        self.freq = np.ones(state_0.shape)
-        self.bias = np.zeros(state_0.shape)
         self.noise_rand = np.zeros(5)
         self.a1 = 1
         self.a2 = 1
 
     def reset(self):
         self.state = np.random.rand(*self.state.shape)*0
-        self.hist = []
-        self.ref_hist = []
-        self.time = 0.0
-        self.mag = np.random.randn()*0 +1
+        self.mag = np.random.randn(*self.state.shape)*0 +1
         self.freq = 3*np.random.randn(*self.state.shape)*0
         self.bias = np.random.rand(*self.state.shape)*0+1
+        self.time = 0.0
+        self.ref = self.mag*np.sin(self.freq*self.time) + self.bias
+        self.hist = []
+        self.ref_hist = []
         self.noise_rand = np.random.rand(5)
 
         return self.state - self.ref
