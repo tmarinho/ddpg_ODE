@@ -1,4 +1,6 @@
 from model.quadcopter import Quadcopter
+from model.lti import LTI
+
 from MarkoC import StochSwitch
 import numpy as np
 import random
@@ -20,27 +22,33 @@ from OU import OU
 import timeit
 import matplotlib.pyplot as plt
 
-
+mode = 0        #Quadrotor = 1 LTI = 0
 OU = OU()       #Ornstein-Uhlenbeck Process
+noise_toggle = 1
 
+klqr = np.array([13.1774, 4.2302])
 def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
     BUFFER_SIZE = 1000000
     BATCH_SIZE = 32
     GAMMA = 0.99
     TAU = 0.001     #Target Network HyperParameters
     LRA = 0.0002   #Learning rate for Actor
-    LRC = 0.0015     #Lerning rate for Critic
-
-    action_dim = 3  #Steering/Acceleration/Brake
-    state_dim = 13  #of sensors input
+    LRC = 0.002     #Lerning rate for Critic
+    lqr_toggle = 0
+    if mode==1:
+        action_dim = 3  #Steering/Acceleration/Brake
+        state_dim  = 13  #of sensors input
+    else:
+        action_dim = 2  #Steering/Acceleration/Brake
+        state_dim  = 2  #of sensors input
 
     #np.random.seed(1337)
 
     vision = False
 
-    EXPLORE = 10000.
+    EXPLORE = 100000.
     episode_count = 4000
-    max_steps = 10000
+    max_steps = 5000
     reward =-100
     done = False
     step = 0
@@ -58,13 +66,12 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
     critic = CriticNetwork(sess, state_dim, action_dim, BATCH_SIZE, TAU, LRC)
     buff = ReplayBuffer(BUFFER_SIZE)    #Create replay buffer
 
-    # Generate a Torcs environment
-    #env = TorcsEnv(vision=vision, throttle=True,gear_change=False)
-    #env = LTI(np.zeros(state_dim))
-    env =  Quadcopter()
 
+    if mode==1:
+        env =  Quadcopter()
+    else:
+        env = LTI(np.zeros(state_dim))
     #Now load the weight
-    print("Now we load the weight")
     try:
         actor.model.load_weights("actormodel.h5")
         critic.model.load_weights("criticmodel.h5")
@@ -74,7 +81,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
     except:
         print("Cannot find the weight")
 
-    print("TORCS Experiment Start.")
+    print("I wish you good luck!")
     for i in range(episode_count):
 
         print("Episode : " + str(i) + " Replay Buffer " + str(buff.count()))
@@ -99,10 +106,12 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #s_t2 =np.expand_dims(s_t,axis = 1)
             a_t_original = actor.model.predict(s_t)
             #print a_t_original[0], s_t
-            noise_t[0][0] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0], 0 , 0.0,10 )
-            noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.2, 1.00, 0.1)
-            noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], 0 , 1.00, 0.1)
-            #noise_t[0][3] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][3], 0, 1.00, 500)
+            noise_t[0][0] = noise_toggle* train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0], 0 , 0.0,10 )
+            noise_t[0][1] = noise_toggle*train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.2, 1.00, 10)
+            if mode==1:
+                noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.2, 1.00, 0.1)
+                noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], 0 , 1.00, 0.1)
+                noise_t[0][3] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][3], 0, 1.00, 500)
 
             #The following code do the stochastic brake
             #if random.random() <= 0.1:
@@ -114,9 +123,13 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #     if CTMC.x == 0:
             #         a_t = a_t_original/a_t_original + noise
             #     else:
-            a_t[0][0] = np.clip(a_t_original[0][0] + noise_t[0][0],0,1000)
+            a_t[0][0] = a_t_original[0][0] + noise_t[0][0]
             a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
-            a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
+            if mode==1:
+                a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
+                a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
+            if lqr_toggle ==1:
+                a_t[0][0] = -klqr.dot(np.asarray(s_t[0]))
             #a_t[0][3] = a_t_original[0][1] + noise_t[0][3]
 
             ob, r_t, done, info = env.step(a_t[0])
@@ -144,6 +157,11 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             if (train_indicator):
                 loss += critic.model.train_on_batch([states,actions], y_t)
                 a_for_grad = actor.model.predict(states)
+                #print states
+                #print a_for_grad
+                if lqr_toggle:
+                    a_for_grad[0] = klqr.dot(states[0])
+                    #print a_for_grad
                 grads = critic.gradients(states, a_for_grad)
                 actor.train(states, grads)
                 actor.target_train()
@@ -152,6 +170,10 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             total_reward += r_t
             s_t = s_t1
 
+            if 0:
+                epsilon = 1
+                lqr_toggle = 0
+                print 'I am here'
             #print("Episode", i, "Step", step, "Action", a_t, "Reward", r_t, "Loss", loss)
 
             step += 1
@@ -160,19 +182,23 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
         if np.mod(i, 1) == 0:
             plt.close()
             hist = np.asarray(env.hist)
-            print(hist[0])
-            #rhist = np.asarray(env.ref_hist)
-            fig = plt.figure()
-            ax1 = fig.add_subplot(121)
-            ax1.plot(hist[:,0],'b')
-            ax1.plot(hist[:,1],'r')
+            #print(hist[0])
+
+
+            if mode ==1:
+                fig = plt.figure()
+                ax1 = fig.add_subplot(121)
+                ax1.plot(hist[:,0],'b')
+                ax1.plot(hist[:,1],'r')
                         #plt.plot(hist[:,1],'r')
-            ax2 = fig.add_subplot(122)
-            ax2.plot(hist[:,2],'g')
-            #plt.plot(hist[:,1],'r')
-            #plt.plot(rhist[:,0], 'b-.')
-            #plt.plot(rhist[:,1], 'r-.')
-            #plt.ylim([-1, 2])
+                ax2 = fig.add_subplot(122)
+                ax2.plot(hist[:,2],'g')
+            else:
+                rhist = np.asarray(env.ref_hist)
+                plt.plot(hist[:,0],'b')
+                plt.plot(rhist[:,0], 'b-.')
+                #plt.plot(rhist[:,1], 'r-.')
+                #plt.ylim([-1, 2])
             plt.show(block=False)
             #plt.draw()
         if np.mod(i, 3) == 0:
