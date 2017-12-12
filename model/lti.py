@@ -43,8 +43,8 @@ class LTI:
         x2 = state[1]
         #x1_dot = x2 + u[0] + x2**2
         #x2_dot = -self.a1*x1-self.a2*x2 + u[1]# + self.disturbance(time)
-        x1_dot =  x2  + u[0] +0.*sin(self.disturbance(self.time))
-        x2_dot = -x1 + 0.2*x2  +u[1] + 0*self.disturbance(self.time)
+        x1_dot =  u[0]  +0.*sin(self.disturbance(self.time))
+        x2_dot =  u[1] + 0*self.disturbance(self.time)
 
         self.x_dot  = np.array([x1_dot, x2_dot])
 
