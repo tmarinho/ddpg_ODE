@@ -107,7 +107,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             a_t_original = actor.model.predict(s_t)
             #print a_t_original[0], s_t
             noise_t[0][0] = noise_toggle* train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0], 0 , 0.0,10 )
-            noise_t[0][1] = noise_toggle*train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.2, 1.00, 10)
+            noise_t[0][1] = noise_toggle*train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0, 00, 10)
             if mode==1:
                 noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.2, 1.00, 0.1)
                 noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], 0 , 1.00, 0.1)
@@ -197,6 +197,8 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
                 rhist = np.asarray(env.ref_hist)
                 plt.plot(hist[:,0],'b')
                 plt.plot(rhist[:,0], 'b-.')
+                plt.plot(hist[:,1],'r')
+                plt.plot(rhist[:,1], 'r-.')
                 #plt.plot(rhist[:,1], 'r-.')
                 #plt.ylim([-1, 2])
             plt.show(block=False)

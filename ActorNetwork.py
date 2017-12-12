@@ -51,7 +51,7 @@ class ActorNetwork(object):
         h0 = Dense(HIDDEN1_UNITS, activation='relu')(S)
         h1 = Dense(HIDDEN2_UNITS, activation='relu')(h0)
         #u1 = Dense(action_dim,activation='linear', kernel_initializer=RandomUniform(-0.03, 0.03))(h1)
-        u1 = Dense(action_dim,activation='linear')(h1)
+        u1 = Dense(action_dim,activation='tanh')(h1)
 
         #Acceleration = Dense(1,activation='sigmoid',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1)
         #Brake = Dense(1,activation='sigmoid',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1)

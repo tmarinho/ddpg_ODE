@@ -18,10 +18,10 @@ class LTI:
         self.noise_rand = np.zeros(5)
         self.a1 = 1
         self.a2 = 1
-        self.Q      = np.array([[10, 0],[0, 0]])
+        self.Q      = np.array([[10, 0],[0, 10]])
 
     def reset(self):
-        self.state = np.random.randn(*self.state.shape)*1.5
+        self.state = np.random.randn(*self.state.shape)*0 +10
         self.mag = np.random.randn(*self.state.shape)*0.5
         self.freq = np.random.rand(*self.state.shape)*1 +0.5
         self.bias = np.random.randn(*self.state.shape)
@@ -66,15 +66,14 @@ class LTI:
         self.hist.append(np.array(self.state))
 
     def step(self, action):
-        self.ref =  self.mag*np.sin(self.freq*self.time) + self.bias
-        self.ref[1] = 0
+        self.ref = -10 + 0*self.mag*np.sin(self.freq*self.time) + self.bias*0
         #self.ref[0] = 0
         done = False
         self.update(action)
         error = self.state - self.ref
         reward = self.reward(error, action)
         self.ref_hist.append(np.array(self.ref))
-        if abs(np.linalg.norm(error[0])) > 10:
+        if abs(np.linalg.norm(error[0])) > 200:
             done = True
 
         return error, reward, done, {}
