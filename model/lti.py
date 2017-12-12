@@ -73,7 +73,7 @@ class LTI:
         error = self.state - self.ref
         reward = self.reward(error, action)
         self.ref_hist.append(np.array(self.ref))
-        if abs(np.linalg.norm(error[0])) > 200:
+        if abs(np.linalg.norm(error)) > 50:
             done = True
 
         return error, reward, done, {}
