@@ -26,8 +26,8 @@ mode = 0        #Quadrotor = 1 LTI = 0
 OU = OU()       #Ornstein-Uhlenbeck Process
 noise_toggle = 1
 
-klqr = np.array([13.1774, 4.2302])
-def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
+klqr = np.array([10.0000,  4.4721])
+def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
     BUFFER_SIZE = 1000000
     BATCH_SIZE = 32
     GAMMA = 0.99
@@ -39,16 +39,16 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
         action_dim = 3  #Steering/Acceleration/Brake
         state_dim  = 13  #of sensors input
     else:
-        action_dim = 2  #Steering/Acceleration/Brake
+        action_dim = 1  #Steering/Acceleration/Brake
         state_dim  = 2  #of sensors input
 
     #np.random.seed(1337)
 
     vision = False
 
-    EXPLORE = 100000.
+    EXPLORE = 200000.
     episode_count = 4000
-    max_steps = 5000
+    max_steps = 2000
     reward =-100
     done = False
     step = 0
@@ -107,7 +107,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             a_t_original = actor.model.predict(s_t)
             #print a_t_original[0], s_t
             noise_t[0][0] = noise_toggle* train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0], 0 , 0.0,10 )
-            noise_t[0][1] = noise_toggle*train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0, 00, 10)
+            #noise_t[0][1] = noise_toggle*train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0, 00, 100)
             if mode==1:
                 noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.2, 1.00, 0.1)
                 noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], 0 , 1.00, 0.1)
@@ -124,7 +124,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
             #         a_t = a_t_original/a_t_original + noise
             #     else:
             a_t[0][0] = a_t_original[0][0] + noise_t[0][0]
-            a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
+            #a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
             if mode==1:
                 a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
                 a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
@@ -159,7 +159,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
                 a_for_grad = actor.model.predict(states)
                 #print states
                 #print a_for_grad
-                if lqr_toggle:
+                if 0:
                     a_for_grad[0] = klqr.dot(states[0])
                     #print a_for_grad
                 grads = critic.gradients(states, a_for_grad)
@@ -182,6 +182,7 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
         if np.mod(i, 1) == 0:
             plt.close()
             hist = np.asarray(env.hist)
+            u = np.asarray(env.u_hist)
             #print(hist[0])
 
 
@@ -194,11 +195,15 @@ def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
                 ax2 = fig.add_subplot(122)
                 ax2.plot(hist[:,2],'g')
             else:
+                fig = plt.figure()
+                ax1 = fig.add_subplot(121)
                 rhist = np.asarray(env.ref_hist)
-                plt.plot(hist[:,0],'b')
-                plt.plot(rhist[:,0], 'b-.')
-                plt.plot(hist[:,1],'r')
-                plt.plot(rhist[:,1], 'r-.')
+                ax1.plot(hist[:,0],'b')
+                ax1.plot(rhist[:,0], 'b-.')
+                ax2 = fig.add_subplot(122)
+                ax2.plot(u[:],'g')
+                #plt.plot(hist[:,1],'r')
+                #plt.plot(rhist[:,1], 'r-.')
                 #plt.plot(rhist[:,1], 'r-.')
                 #plt.ylim([-1, 2])
             plt.show(block=False)

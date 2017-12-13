@@ -12,24 +12,29 @@ class LTI:
         self.x_dot = np.zeros(2)
         self.hist = []
         self.ref_hist = []
+        self.u_hist = []
         self.reset()
-        control_frequency = 100 # Hz for attitude control loop
+        control_frequency = 35 # Hz for attitude control loop
         self.dt = 1.0 / control_frequency
         self.noise_rand = np.zeros(5)
         self.a1 = 1
         self.a2 = 1
-        self.Q      = np.array([[10, 0],[0, 10]])
+        self.Q      = np.array([[10, 0],[0, 0]])
 
     def reset(self):
-        self.state = np.random.randn(*self.state.shape)*0 +10
-        self.mag = np.random.randn(*self.state.shape)*0.5
+        self.state = np.random.randn(*self.state.shape)*0
+        self.mag = np.random.rand(*self.state.shape)*3
         self.freq = np.random.rand(*self.state.shape)*1 +0.5
-        self.bias = np.random.randn(*self.state.shape)
+        if np.random.rand()>0.5:
+            self.bias = np.array([1, 0])
+        else:
+            self.bias = np.array([-1, 0])
         self.time = 0.0
         self.ref = self.mag*np.sin(self.freq*self.time) + self.bias
         self.ref[1] = 0
         self.hist = []
         self.ref_hist = []
+        self.u_hist = []
         self.noise_rand = np.random.rand(5)
 
         return self.state - self.ref
@@ -43,18 +48,17 @@ class LTI:
         x2 = state[1]
         #x1_dot = x2 + u[0] + x2**2
         #x2_dot = -self.a1*x1-self.a2*x2 + u[1]# + self.disturbance(time)
-        x1_dot =  u[0]  +0.*sin(self.disturbance(self.time))
-        x2_dot =  u[1] + 0*self.disturbance(self.time)
+        x1_dot = x2
+        x2_dot =  u[0]
 
         self.x_dot  = np.array([x1_dot, x2_dot])
-
         return self.x_dot
 
     def reward(self,e,u):
-        #if e < 1.2*np.exp(-0.2*self.time)+0.1:
+        #if np.linalg.norm(e[0]) < 0.01:
         #    return 1
-        #return 0
-        return -e.dot(self.Q.dot(e))- 0.001*np.linalg.norm(u)**2
+        #return -1
+        return -e.dot(self.Q.dot(e))- 0.1*np.linalg.norm(u)**2
         #return 1/(e.dot(self.Q.dot(e))+1)
 
     def update(self, u):
@@ -64,16 +68,18 @@ class LTI:
         self.time += self.dt
         self.state = out[1]
         self.hist.append(np.array(self.state))
+        self.u_hist.append(u[0])
 
     def step(self, action):
-        self.ref = -10 + 0*self.mag*np.sin(self.freq*self.time) + self.bias*0
+        self.ref = self.mag*np.sin(self.freq*self.time/10) + self.bias
+        self.ref[1]= 0
         #self.ref[0] = 0
         done = False
         self.update(action)
         error = self.state - self.ref
         reward = self.reward(error, action)
         self.ref_hist.append(np.array(self.ref))
-        if abs(np.linalg.norm(error)) > 50:
+        if abs(np.linalg.norm(error[0])) > 5:
             done = True
 
         return error, reward, done, {}

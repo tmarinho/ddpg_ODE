@@ -8,8 +8,8 @@ from keras.optimizers import Adam
 import keras.backend as K
 import tensorflow as tf
 
-HIDDEN1_UNITS = 64
-HIDDEN2_UNITS = 128
+HIDDEN1_UNITS = 32
+HIDDEN2_UNITS = 64
 
 # HIDDEN1_UNITS = 128
 # HIDDEN2_UNITS = 256
