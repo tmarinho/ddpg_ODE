@@ -8,11 +8,11 @@ from keras.optimizers import Adam
 import keras.backend as K
 import tensorflow as tf
 
-HIDDEN1_UNITS = 32
-HIDDEN2_UNITS = 64
+LAYER1 = 32
+LAYER2 = 64
 
-# HIDDEN1_UNITS = 128
-# HIDDEN2_UNITS = 256
+# LAYER1 = 128
+# LAYER2 = 256
 
 class CriticNetwork(object):
     def __init__(self, sess, state_size, action_size, BATCH_SIZE, TAU, LEARNING_RATE):
@@ -47,11 +47,11 @@ class CriticNetwork(object):
         print("Now we build the model")
         S = Input(shape=[state_size])
         A = Input(shape=[action_dim],name='action2')
-        w1 = Dense(HIDDEN1_UNITS, activation='relu')(S)
-        a1 = Dense(HIDDEN2_UNITS, activation='linear')(A)
-        h1 = Dense(HIDDEN2_UNITS, activation='linear')(w1)
+        w1 = Dense(LAYER1, activation='relu')(S)
+        a1 = Dense(LAYER2, activation='linear')(A)
+        h1 = Dense(LAYER2, activation='linear')(w1)
         h2 = merge([h1,a1],mode='sum')
-        h3 = Dense(HIDDEN2_UNITS, activation='relu')(h2)
+        h3 = Dense(LAYER2, activation='relu')(h2)
         V = Dense(action_dim,activation='linear')(h3)
         model = Model(input=[S,A],output=V)
         adam = Adam(lr=self.LEARNING_RATE)

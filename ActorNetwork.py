@@ -8,11 +8,11 @@ from keras.optimizers import Adam
 import tensorflow as tf
 import keras.backend as K
 
-HIDDEN1_UNITS = 8
-HIDDEN2_UNITS = 16
+LAYER1 = 8
+LAYER2 = 16
 
-# HIDDEN1_UNITS = 128
-# HIDDEN2_UNITS = 256
+# LAYER1 = 128
+# LAYER2 = 256
 
 class ActorNetwork(object):
     def __init__(self, sess, state_size, action_size, BATCH_SIZE, TAU, LEARNING_RATE):
@@ -48,14 +48,9 @@ class ActorNetwork(object):
     def create_actor_network(self, state_size,action_dim):
         print("Now we build the model")
         S = Input(shape=[state_size])
-        h0 = Dense(HIDDEN1_UNITS, activation='relu')(S)
-        h1 = Dense(HIDDEN2_UNITS, activation='relu')(h0)
-        #u1 = Dense(action_dim,activation='linear', kernel_initializer=RandomUniform(-0.03, 0.03))(h1)
+        h0 = Dense(LAYER1, activation='relu')(S)
+        h1 = Dense(LAYER2, activation='relu')(h0)
         u1 = Dense(action_dim,activation='linear')(h1)
 
-        #Acceleration = Dense(1,activation='sigmoid',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1)
-        #Brake = Dense(1,activation='sigmoid',init=lambda shape, name: normal(shape, scale=1e-4, name=name))(h1)
-        #V = merge([Steering,Acceleration,Brake],mode='concat')
-        #V = merge([u1],mode='concat')
         model = Model(input=S,output=u1)
         return model, model.trainable_weights, S
